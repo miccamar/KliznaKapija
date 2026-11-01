@@ -1,0 +1,17 @@
+# PlatformIO privremeni i kompajlirani fajlovi
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# VS Code lokalna podesavanja
+.vscode/*
+!.vscode/extensions.json
+
+# Binarni fajlovi kompajlera
+*.bin
+*.elf
+*.hex
+
+# OS kes fajlovi
+.DS_Store
+Thumbs.db
