@@ -58,7 +58,7 @@ Rešava problem asimetrije brzina motora automobilskih brisača (različita brzi
 
 1. Klonirajte repozitorijum:
    ```bash
-   git clone https://github.com/VASE_KORISNICKO_IME/KliznaKapija.git
+   git clone https://github.com/miccamar/KliznaKapija.git
    cd KliznaKapija
    ```
 2. Otvorite projekat u **VS Code** (PlatformIO IDE).
