@@ -217,7 +217,8 @@ void setup() {
             clearErrorState();
             return;
         }
-        if (cmd == "open") executeOpen();
+        if (cmd == "reboot") { signals.playSound(SOUND_STOP); displayOLED.showBootStep("Restartovanje...", "Molim sacekajte"); delay(800); ESP.restart(); }
+        else if (cmd == "open") executeOpen();
         else if (cmd == "close") executeClose();
         else if (cmd == "pedestrian") executePedestrian();
         else if (cmd == "stop") executeStop(false);

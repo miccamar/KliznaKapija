@@ -491,9 +491,10 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
                     </div>
                 </div>
 
-                <div class="actions-footer">
+                                <div class="actions-footer">
                     <button onclick="saveAllSettings()" class="btn-save">💾 SAČUVAJ PODEŠAVANJA U FLASH</button>
                     <button onclick="resetDefaultSettings()" class="btn-reset">↺ Fabričke vrednosti</button>
+                    <button onclick="confirmReboot()" class="btn-reset" style="border-color:#ef4444; color:#ef4444;">🔄 Restartuj ESP</button>
                 </div>
             </div>
         </section>
@@ -708,6 +709,14 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
             showToast('Vraćene fabričke vrednosti — klikni Sačuvaj');
         }
 
+        
+        function confirmReboot() {
+            if (confirm("Da li sigurno želiš da restartuješ NodeMCU mikrokontroler?")) {
+                sendCmd('reboot');
+                showToast('Šaljem komandu za restart...', false);
+            }
+        }
+    
         connectWS();
     </script>
 </body>

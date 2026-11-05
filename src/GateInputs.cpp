@@ -2,7 +2,7 @@
 
 GateInputs::GateInputs() 
     : m_limitOpenState(false), m_limitCloseState(false), 
-      m_safetyState(false), m_toggleMode(true) {
+      m_safetyState(false), m_toggleMode(true), m_lastRecoverTime(0) {
     for (int i = 0; i < 8; i++) {
         m_buttonStates[i] = false;
         m_lastButtonStates[i] = false;
@@ -10,20 +10,65 @@ GateInputs::GateInputs()
     }
 }
 
-bool GateInputs::begin() {
-    Wire.beginTransmission(PCF8574_ADDRESS);
-    if (Wire.endTransmission() == 0) {
-        Wire.beginTransmission(PCF8574_ADDRESS);
-        Wire.write(0xFF);
-        Wire.endTransmission();
-        return true;
+void GateInputs::recoverI2C() {
+    if (millis() - m_lastRecoverTime < 1000) return; // Ne češće od 1s
+    m_lastRecoverTime = millis();
+
+    // 9 SCL clock impulsa za oslobađanje zaglavljene I2C linije (I2C bus recovery standard)
+    pinMode(SDA_PIN, INPUT_PULLUP);
+    pinMode(SCL_PIN, OUTPUT);
+    for (int i = 0; i < 9; i++) {
+        digitalWrite(SCL_PIN, HIGH);
+        delayMicroseconds(10);
+        digitalWrite(SCL_PIN, LOW);
+        delayMicroseconds(10);
     }
-    return false;
+    pinMode(SCL_PIN, INPUT_PULLUP);
+
+    Wire.begin(SDA_PIN, SCL_PIN);
+    Wire.setClock(100000); // 100 kHz standardna brzina, maksimalno otporna na šum
+    Wire.setTimeout(100);  // 100ms timeout sprečava blokadu koda
+
+    Wire.beginTransmission(PCF8574_ADDRESS);
+    Wire.write(0xFF);
+    Wire.endTransmission();
+}
+
+bool GateInputs::begin() {
+    recoverI2C();
+    Wire.beginTransmission(PCF8574_ADDRESS);
+    return (Wire.endTransmission() == 0);
 }
 
 uint8_t GateInputs::readPCF() {
-    Wire.requestFrom((uint8_t)PCF8574_ADDRESS, (uint8_t)1);
-    return Wire.available() ? Wire.read() : 0xFF;
+    // 1. Proveri da li čip odgovara
+    Wire.beginTransmission(PCF8574_ADDRESS);
+    uint8_t err = Wire.endTransmission();
+    if (err != 0) {
+        recoverI2C();
+        return 0xFF; // Sigurno stanje: svi tasteri otpušteni
+    }
+
+    // 2. Zatraži 1 bajt
+    uint8_t n = Wire.requestFrom((uint8_t)PCF8574_ADDRESS, (uint8_t)1);
+    if (n == 0 || !Wire.available()) {
+        recoverI2C();
+        return 0xFF;
+    }
+
+    uint8_t raw = Wire.read();
+
+    // 3. SANITY CHECK: Nemoguće stanje
+    // Pin 2 (Limit Otvoreno) i Pin 3 (Limit Zatvoreno) NE MOGU oba biti 0 (aktivna) u isto vreme!
+    // Ako su oba 0, desio se I2C šum / bus latchup.
+    bool limOpenActive  = !((raw >> 2) & 1);
+    bool limCloseActive = !((raw >> 3) & 1);
+    if (limOpenActive && limCloseActive) {
+        recoverI2C();
+        return 0xFF;
+    }
+
+    return raw;
 }
 
 ButtonEvent GateInputs::update() {

@@ -22,6 +22,7 @@ public:
     GateInputs();
     bool begin();
     ButtonEvent update();
+    void recoverI2C();
 
     bool isLimitOpen() const { return m_limitOpenState; }
     bool isLimitClose() const { return m_limitCloseState; }
@@ -42,6 +43,7 @@ private:
     bool m_limitCloseState;
     bool m_safetyState;
     bool m_toggleMode;
+    unsigned long m_lastRecoverTime;
 };
 
 #endif
